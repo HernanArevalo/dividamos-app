@@ -23,7 +23,7 @@ import { formatAmount } from '@/lib/format'
 import { CopyLinkButton } from '@/components/dividamos/copy-link-button'
 import { WhatsAppIndividualShare } from '@/components/dividamos/whatsapp-share'
 import type { Session, Participant } from '@/lib/types'
-import { cn } from '@/lib/utils'
+import { cn, SITE_URL } from '@/lib/utils'
 
 export default function ParticipantPage() {
   const params = useParams()
@@ -245,7 +245,7 @@ export default function ParticipantPage() {
       {/* Actions */}
       <div className="flex flex-wrap gap-2 pb-6">
         <WhatsAppIndividualShare session={session} participant={participant} />
-        <CopyLinkButton label="Copiar mi link" />
+        <CopyLinkButton label="Copiar mi link" url={ SITE_URL + "/" + sessionId + "/" + participantSlug }/>
       </div>
     </main>
   )

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Link2, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { SITE_URL } from '@/lib/utils'
 
 interface Props {
   url?: string
@@ -14,7 +15,7 @@ export function CopyLinkButton({ url, label = 'Copiar link', className }: Props)
   const [copied, setCopied] = useState(false)
 
   async function handleCopy() {
-    const target = url ?? window.location.href
+    const target = url ?? SITE_URL
     try {
       await navigator.clipboard.writeText(target)
       setCopied(true)
