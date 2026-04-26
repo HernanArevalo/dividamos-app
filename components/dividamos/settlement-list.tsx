@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { formatAmount, settlementKey } from '@/lib/format'
-import { getPaidKeys, savePaidKeys } from '@/lib/storage'
+import { getPaidKeysAction, setSettlementPaidAction } from '@/lib/actions/session-actions'
 import type { Settlement, Participant } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { ArrowRight } from 'lucide-react'
@@ -19,24 +19,26 @@ export function SettlementList({ settlements, participants, sessionId }: Props) 
   const [paidKeys, setPaidKeys] = useState<Set<string>>(new Set())
 
   useEffect(() => {
-    setPaidKeys(getPaidKeys(sessionId))
+    let mounted = true
+
+    getPaidKeysAction(sessionId).then((keys) => {
+      if (!mounted) return
+      setPaidKeys(new Set(keys))
+    })
+
+    return () => {
+      mounted = false
+    }
   }, [sessionId])
 
   function getName(id: string) {
     return participants.find((p) => p.id === id)?.name ?? id
   }
 
-  function toggle(key: string) {
-    setPaidKeys((prev) => {
-      const next = new Set(prev)
-      if (next.has(key)) {
-        next.delete(key)
-      } else {
-        next.add(key)
-      }
-      savePaidKeys(sessionId, next)
-      return next
-    })
+  async function toggle(key: string) {
+    const shouldBePaid = !paidKeys.has(key)
+    const keys = await setSettlementPaidAction(sessionId, key, shouldBePaid)
+    setPaidKeys(new Set(keys))
   }
 
   if (settlements.length === 0) {
@@ -69,7 +71,7 @@ export function SettlementList({ settlements, participants, sessionId }: Props) 
             <Checkbox
               id={key}
               checked={isPaid}
-              onCheckedChange={() => toggle(key)}
+              onCheckedChange={() => void toggle(key)}
               aria-label="Marcar como pagado"
             />
             <div className="flex-1 min-w-0">

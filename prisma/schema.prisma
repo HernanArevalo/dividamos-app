@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Session {
+  id               String            @id
+  title            String
+  currency         String            @default("ARS")
+  participants     Participant[]
+  expenses         Expense[]
+  settlementStates SettlementState[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model Participant {
+  id        String   @id
+  name      String
+  alias     String
+  slug      String
+  sessionId String
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sessionId, slug])
+}
+
+model Expense {
+  id          String   @id
+  description String
+  amount      Float
+  paidBy      String
+  sessionId   String
+  session     Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([sessionId])
+}
+
+model SettlementState {
+  id        String   @id @default(cuid())
+  key       String
+  isPaid    Boolean  @default(false)
+  sessionId String
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  updatedAt DateTime @updatedAt
+
+  @@unique([sessionId, key])
+}

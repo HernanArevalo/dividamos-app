@@ -12,7 +12,7 @@ import {
   Receipt,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { getSession } from '@/lib/storage'
+import { getSessionAction } from '@/lib/actions/session-actions'
 import {
   calculateSettlements,
   getParticipantBalance,
@@ -36,13 +36,22 @@ export default function ParticipantPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const s = getSession(sessionId)
-    if (s) {
-      const p = s.participants.find((p) => p.slug === participantSlug) ?? null
-      setSession(s)
-      setParticipant(p)
+    let mounted = true
+
+    getSessionAction(sessionId)
+      .then((s) => {
+        if (!mounted || !s) return
+        const p = s.participants.find((participant) => participant.slug === participantSlug) ?? null
+        setSession(s)
+        setParticipant(p)
+      })
+      .finally(() => {
+        if (mounted) setLoading(false)
+      })
+
+    return () => {
+      mounted = false
     }
-    setLoading(false)
   }, [sessionId, participantSlug])
 
   if (loading) {

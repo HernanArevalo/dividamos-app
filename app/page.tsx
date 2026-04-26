@@ -6,29 +6,21 @@ import { SplitSquareHorizontal, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { generateId } from '@/lib/format'
-import { saveSession } from '@/lib/storage'
-import type { Session } from '@/lib/types'
+import { createSessionAction } from '@/lib/actions/session-actions'
 
 export default function HomePage() {
   const router = useRouter()
   const [title, setTitle] = useState('')
   const [error, setError] = useState('')
 
-  function handleCreate() {
+  async function handleCreate() {
     const trimmed = title.trim()
     if (!trimmed) {
       setError('Ponele un nombre al grupo.')
       return
     }
-    const session: Session = {
-      id: generateId(),
-      title: trimmed,
-      currency: 'ARS',
-      participants: [],
-      expenses: [],
-    }
-    saveSession(session)
+
+    const session = await createSessionAction(trimmed)
     router.push(`/${session.id}`)
   }
 
@@ -70,13 +62,13 @@ export default function HomePage() {
               setTitle(e.target.value)
               setError('')
             }}
-            onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+            onKeyDown={(e) => e.key === 'Enter' && void handleCreate()}
             autoFocus
           />
           {error && <p className="text-destructive text-xs">{error}</p>}
         </div>
 
-        <Button onClick={handleCreate} className="gap-2 w-full">
+        <Button onClick={() => void handleCreate()} className="gap-2 w-full">
           Crear grupo
           <ArrowRight className="w-4 h-4" />
         </Button>

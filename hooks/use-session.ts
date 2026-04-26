@@ -1,115 +1,90 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import type { Session, Participant, Expense } from '@/lib/types'
-import { getSession, saveSession } from '@/lib/storage'
-import { generateId } from '@/lib/format'
-import { uniqueSlug } from '@/lib/slugify'
+import type { Session } from '@/lib/types'
+import {
+  addExpenseAction,
+  addParticipantAction,
+  getSessionAction,
+  removeExpenseAction,
+  removeParticipantAction,
+  updateExpenseAction,
+  updateParticipantAction,
+} from '@/lib/actions/session-actions'
 
 export function useSession(sessionId: string) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const s = getSession(sessionId)
-    setSession(s)
-    setLoading(false)
+    let mounted = true
+
+    getSessionAction(sessionId)
+      .then((data) => {
+        if (!mounted) return
+        setSession(data)
+      })
+      .finally(() => {
+        if (mounted) setLoading(false)
+      })
+
+    return () => {
+      mounted = false
+    }
   }, [sessionId])
 
-  const updateSession = useCallback(
-    (updater: (s: Session) => Session) => {
-      setSession((prev) => {
-        if (!prev) return prev
-        const next = updater(prev)
-        saveSession(next)
-        return next
-      })
-    },
-    []
-  )
-
   const addParticipant = useCallback(
-    (name: string, alias: string) => {
-      updateSession((s) => {
-        const existingSlugs = s.participants.map((p) => p.slug)
-        const slug = uniqueSlug(name, existingSlugs)
-        const participant: Participant = {
-          id: generateId(),
-          name: name.trim(),
-          alias: alias.trim(),
-          slug,
-        }
-        return { ...s, participants: [...s.participants, participant] }
-      })
+    async (name: string, alias: string) => {
+      const updated = await addParticipantAction(sessionId, name, alias)
+      setSession(updated)
     },
-    [updateSession]
+    [sessionId]
   )
 
   const updateParticipant = useCallback(
-    (id: string, name: string, alias: string) => {
-      updateSession((s) => ({
-        ...s,
-        participants: s.participants.map((p) => {
-          if (p.id !== id) return p
-          const existingSlugs = s.participants
-            .filter((pp) => pp.id !== id)
-            .map((pp) => pp.slug)
-          const slug = uniqueSlug(name, existingSlugs)
-          return { ...p, name: name.trim(), alias: alias.trim(), slug }
-        }),
-      }))
+    async (id: string, name: string, alias: string) => {
+      const updated = await updateParticipantAction(sessionId, id, name, alias)
+      setSession(updated)
     },
-    [updateSession]
+    [sessionId]
   )
 
   const removeParticipant = useCallback(
-    (id: string) => {
-      updateSession((s) => ({
-        ...s,
-        participants: s.participants.filter((p) => p.id !== id),
-        expenses: s.expenses.filter((e) => e.paidBy !== id),
-      }))
+    async (id: string) => {
+      const updated = await removeParticipantAction(sessionId, id)
+      setSession(updated)
     },
-    [updateSession]
+    [sessionId]
   )
 
   const addExpense = useCallback(
-    (description: string, amount: number, paidBy: string) => {
-      updateSession((s) => {
-        const expense: Expense = {
-          id: generateId(),
-          description: description.trim(),
-          amount,
-          paidBy,
-        }
-        return { ...s, expenses: [...s.expenses, expense] }
-      })
+    async (description: string, amount: number, paidBy: string) => {
+      const updated = await addExpenseAction(sessionId, description, amount, paidBy)
+      setSession(updated)
     },
-    [updateSession]
+    [sessionId]
   )
 
   const updateExpense = useCallback(
-    (id: string, description: string, amount: number, paidBy: string) => {
-      updateSession((s) => ({
-        ...s,
-        expenses: s.expenses.map((e) =>
-          e.id === id
-            ? { ...e, description: description.trim(), amount, paidBy }
-            : e
-        ),
-      }))
+    async (id: string, description: string, amount: number, paidBy: string) => {
+      const updated = await updateExpenseAction(
+        sessionId,
+        id,
+        description,
+        amount,
+        paidBy
+      )
+      setSession(updated)
     },
-    [updateSession]
+    [sessionId]
   )
 
   const removeExpense = useCallback(
-    (id: string) => {
-      updateSession((s) => ({
-        ...s,
-        expenses: s.expenses.filter((e) => e.id !== id),
-      }))
+    async (id: string) => {
+      const updated = await removeExpenseAction(sessionId, id)
+      setSession(updated)
     },
-    [updateSession]
+    [sessionId]
   )
 
   return {
